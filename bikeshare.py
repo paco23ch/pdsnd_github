@@ -228,7 +228,6 @@ def main():
                     elif option == 6:
                         break
 
-                    #input('Press enter to continue ... ')
                 except:
                     option = 1
         else:
