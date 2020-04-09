@@ -12,37 +12,6 @@ CITY_DATA = { 'chicago': 'chicago.csv',
 MONTHS = ['all','january','february','march','april','may','june','july','august','september','october','november','december']
 DAY_OF_WEEK = ['all','sunday','monday','tuesday','wednesday','thursday','friday','saturday']
 
-def load_data():
-    """
-    Loas the three files into memory and later combines all into a single DataFrame.  It also converts the start/end times to a
-    date/time object and adds the month/day_of_week columns
-
-    Returns:
-        (DataFrame) data - An integrated data frame with all combined columns for the three datasets, plus an additional column
-                            called city, which has the CITY_DATA key values.
-    """
-    load_df = {}
-
-    print('Loading data .... ')
-
-    for cities in CITY_DATA.keys():
-        print('Loading {}...'.format(cities))
-        load_df[cities] = pd.read_csv(CITY_DATA[cities])
-        load_df[cities]['city'] = cities
-        print(load_df[cities].isnull().any())
-    
-    data = pd.concat(load_df.values(),sort=False)
-
-    #Transform date/times to datetime object
-    data['Start Time'] = pd.to_datetime(data['Start Time'])
-    data['End Time'] = pd.to_datetime(data['End Time'])
-
-    #add the month and day_of_week to be used as filters
-    data['month'] = data['Start Time'].dt.month
-    data['day_of_week'] = data['Start Time'].dt.weekday_name
-
-    return data
-
 def get_filters():
     """
     Asks user to specify a city, month, and day to analyze.
@@ -86,7 +55,7 @@ def get_filters():
     return city, month, day
 
 
-def select_data(data, city, month, day):
+def select_data(city, month, day):
     """
     Loads data for the specified city and filters by month and day if applicable.
 
@@ -97,12 +66,26 @@ def select_data(data, city, month, day):
     Returns:
         df - Pandas DataFrame containing city data filtered by month and day
     """
-    df = data.copy()
+    print('Loading data .... ')
+    df = None
+    load_df = {}
 
-    #Applying city filters
-    if city is not None and city != 'all':
-        print('Filterinmg for city={}....'.format(city))
-        df = df[df['city']==city]
+    for cities in CITY_DATA.keys():
+        if city == cities or city == 'all':
+            print('Loading {}...'.format(cities))
+            load_df[cities] = pd.read_csv(CITY_DATA[cities])
+            load_df[cities]['city'] = cities
+            #print(load_df[cities].isnull().any())
+    
+    df = pd.concat(load_df.values(),sort=False)
+
+    #Transform date/times to datetime object
+    df['Start Time'] = pd.to_datetime(df['Start Time'])
+    df['End Time'] = pd.to_datetime(df['End Time'])
+
+    #add the month and day_of_week to be used as filters
+    df['month'] = df['Start Time'].dt.month
+    df['day_of_week'] = df['Start Time'].dt.weekday_name
 
     #Applying month filters
     if month is not None and month != 'all':
@@ -199,20 +182,24 @@ def show_raw_data(df):
     print('DataFrame shape is {}'.format(df.shape))
 
     # TO DO: get user input for day of week (all, monday, tuesday, ... sunday)
-    try:
-        see_raw = int(input('How many lines do you want to see?: '))
-        if see_raw != 0:
-            print(df.head(see_raw))
-        return
-    except:
-        return
+    print(df.shape[0])
+    i=0
+    see_raw = ''
+    while see_raw != 'no' and i < df.shape[0]:
+        try:
+            to = i + 5 if i + 5 <= df.shape[0]-1 else df.shape[0]-1
+            print(df[i:to])
+            see_raw = input('Continue? (no to stop) ... ')
+            if see_raw == 'no':
+                return
+            i += 5
+        except:
+            return
 
 def main():
-    data = load_data()
-
     while True:
         city, month, day = get_filters()
-        df = select_data(data, city, month, day)
+        df = select_data(city, month, day)
 
         #Based pm the filters selected, we may have an empty DataFrame.
         if df.size != 0:
@@ -241,7 +228,6 @@ def main():
                     elif option == 6:
                         break
 
-                    wait = input('Press enter to continue ... ')
                 except:
                     option = 1
         else:
